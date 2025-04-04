@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI Auth</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background: blue;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: darkblue;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2 id="form-title">Login</h2>
+
+        <div id="signup-fields" class="hidden">
+            <input type="text" id="first_name" placeholder="First Name">
+            <input type="text" id="last_name" placeholder="Last Name">
+            <input type="text" id="username" placeholder="Username">
+        </div>
+
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="handleAuth()">Submit</button>
+
+        <p>
+            <span id="toggle-text">Don't have an account?</span>
+            <a href="#" onclick="toggleForm()">Sign Up</a>
+        </p>
+
+        <div id="status"></div>
+    </div>
+
+    <script>
+        let isSignUp = false;
+
+        function toggleForm() {
+            isSignUp = !isSignUp;
+            document.getElementById("form-title").textContent = isSignUp ? "Sign Up" : "Login";
+            document.getElementById("signup-fields").classList.toggle("hidden", !isSignUp);
+            document.getElementById("toggle-text").textContent = isSignUp ? "Already have an account?" : "Don't have an account?";
+        }
+
+        async function handleAuth() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const first_name = isSignUp ? document.getElementById("first_name").value : null;
+    const last_name = isSignUp ? document.getElementById("last_name").value : null;
+    const username = isSignUp ? document.getElementById("username").value : null;
+
+    const url = isSignUp ? "http://127.0.0.1:8000/signup/" : "http://127.0.0.1:8000/login/";
+    const payload = isSignUp
+        ? { username, email, password, ...(first_name && { first_name }), ...(last_name && { last_name }) }
+        : { email, password };
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            mode: "cors",
+        });
+
+        const data = await response.json();
+        console.log("Response Data:", data); // ✅ Log response
+
+        if (response.ok) {
+            document.getElementById("status").innerHTML = `<p style="color: green;">${data.message || "Success!"}</p>`;
+
+            if (!isSignUp) { // ✅ Redirect only after login
+                localStorage.setItem("token", data.token || data.access_token); // Store JWT
+                localStorage.setItem("username", data.username);
+                window.location.href = "dashboard.html"; // Navigate to classroom page
+            }
+        } else {
+            document.getElementById("status").innerHTML = `<p style="color: red;">${data.detail || "Error!"}</p>`;
+        }
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+
+    </script>
+
+</body>
+</html>
